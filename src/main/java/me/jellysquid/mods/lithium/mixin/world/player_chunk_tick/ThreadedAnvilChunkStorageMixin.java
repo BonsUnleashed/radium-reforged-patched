@@ -28,6 +28,11 @@ public abstract class ThreadedAnvilChunkStorageMixin {
     @Shadow
     protected abstract ChunkSectionPos updateWatchedSection(ServerPlayerEntity player);
 
+    @Shadow
+    protected abstract void sendWatchPackets(ServerPlayerEntity player, ChunkPos pos,
+                                             MutableObject<ChunkDataS2CPacket> packet,
+                                             boolean oldWithinViewDistance, boolean newWithinViewDistance);
+
     /**
      * @author JellySquid
      * @reason Defer sending chunks to the player so that we can batch them together
@@ -146,7 +151,9 @@ public abstract class ThreadedAnvilChunkStorageMixin {
     }
 
     protected void stopWatchingChunk(ServerPlayerEntity player, int x, int z) {
-        player.sendUnloadChunkPacket(new ChunkPos(x, z));
+        // Drop the chunk through the vanilla method, which sends the unload packet and fires the Forge unwatch
+        // event, so that mods hooking it (e.g. to keep a chunk a camera still shows) see the chunk leaving the view
+        this.sendWatchPackets(player, new ChunkPos(x, z), new MutableObject<>(), true, false);
     }
 
     @Shadow
